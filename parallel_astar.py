@@ -1,7 +1,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import math
-from common import euclidean_heuristic, speeds, log
+from common import euclidean_heuristic, speeds, log_common
 
 class _PLLNode:
     __slots__ = ('node', 'f', 'g', 't', 'prev', 'next')
@@ -90,9 +90,9 @@ def parallel_astar_linkedlist(graph, origin, destination,
                               heuristic=euclidean_heuristic,
                               speeds=speeds,
                               max_workers=4):
-    log(f"[Parallel A*] Starting with {max_workers} workers.")
+    log_common(f"[Parallel A*] Starting with {max_workers} workers.")
     if origin not in graph or destination not in graph:
-        log("Origin or destination not in graph.")
+        log_common("Origin or destination not in graph (parallel).")
         return None, None
     if origin == destination:
         return [origin], 0.0
@@ -108,7 +108,7 @@ def parallel_astar_linkedlist(graph, origin, destination,
         try:
             current, f_cur, g_cur, t_cur = open_set.pop_min()
         except IndexError:
-            log("Open set empty, no path (parallel).")
+            log_common("Open set empty, no path (parallel).")
             return None, None
 
         if f_cur > g_scores.get(current, float('inf')) + \
@@ -116,7 +116,7 @@ def parallel_astar_linkedlist(graph, origin, destination,
             continue
 
         if current == destination:
-            log("Destination reached (parallel).")
+            log_common("Destination reached (parallel).")
             path = []
             node = destination
             while node != origin:

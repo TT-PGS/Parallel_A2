@@ -1,0 +1,5 @@
+usr_temp/*
+cache/*
+
+*.pyc
+*.txt

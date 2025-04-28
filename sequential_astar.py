@@ -1,13 +1,13 @@
 import heapq
 import math
-from common import euclidean_heuristic, speeds, log
+from common import euclidean_heuristic, speeds, log_common
 
 
 def astar_shortest_path(graph, origin, destination,
                          heuristic=euclidean_heuristic):
     """Time-dependent A* shortest path (sequential)."""
     if origin not in graph or destination not in graph:
-        log("Origin or destination not in graph.")
+        log_common("Origin or destination not in graph (sequential).")
         return None, None
     if origin == destination:
         return [origin], 0.0
@@ -21,7 +21,7 @@ def astar_shortest_path(graph, origin, destination,
         f_cur, g_cur, t_cur, node, path = heapq.heappop(open_set)
 
         if node == destination:
-            log("Destination reached (sequential).")
+            log_common("Destination reached (sequential).")
             return path, g_cur
 
         if node in closed:
@@ -42,5 +42,6 @@ def astar_shortest_path(graph, origin, destination,
                 f_next = g_next + h_next
                 heapq.heappush(open_set,
                                (f_next, g_next, t_next, nbr, path + [nbr]))
-    log("No path found (sequential).")
+
+    log_common("No path found (sequential).")
     return None, None

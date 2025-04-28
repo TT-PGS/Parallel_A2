@@ -9,8 +9,8 @@ speeds = [350, 350, 500, 500, 600, 600, 550, 500, 400, 300,
           600, 550, 500, 400, 300, 600, 550, 500, 400, 300]
 
 
-def log(message):
-    """Log messages to console and file."""
+def log_common(message):
+    """Generic log for common utilities (writes to common.txt)."""
     print(f"[LOG] {message}")
     script = os.path.splitext(os.path.basename(__file__))[0]
     filename = f"{script}.txt"
@@ -31,7 +31,7 @@ def euclidean_heuristic(graph, n1, n2, t=0):
 
 def load_graph(place):
     """Load and return a drive network graph for the given place."""
-    log(f"Loading graph for {place}...")
+    log_common(f"Loading graph for {place}...")
     return ox.graph_from_place(place, network_type="drive")
 
 
