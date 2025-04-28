@@ -31,7 +31,7 @@ def euclidean_heuristic(graph, n1, n2, t=0):
 
 def load_graph(place):
     """Load and return a drive network graph for the given place."""
-    log_common(f"Loading graph for {place}...")
+    print(f"Loading graph for {place}...")
     return ox.graph_from_place(place, network_type="drive")
 
 
