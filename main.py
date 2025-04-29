@@ -66,7 +66,7 @@ def main():
 
     if path:
         log(f"Path found: {path[:5]} -> ... -> {path[-1]}, cost={cost:.2f}")
-        ox.plot_graph_route(graph, path, node_size=3)
+        # ox.plot_graph_route(graph, path, node_size=3)
     else:
         log("No path found.")
 

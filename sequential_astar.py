@@ -7,7 +7,7 @@ def astar_shortest_path(graph, origin, destination,
                          heuristic=euclidean_heuristic):
     """Time-dependent A* shortest path (sequential)."""
     if origin not in graph or destination not in graph:
-        log_common("Origin or destination not in graph (sequential).")
+        # log_common("Origin or destination not in graph (sequential).")
         return None, None
     if origin == destination:
         return [origin], 0.0
@@ -21,7 +21,7 @@ def astar_shortest_path(graph, origin, destination,
         f_cur, g_cur, t_cur, node, path = heapq.heappop(open_set)
 
         if node == destination:
-            log_common("Destination reached (sequential).")
+            # log_common("Destination reached (sequential).")
             return path, g_cur
 
         if node in closed:

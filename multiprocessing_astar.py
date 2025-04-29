@@ -24,9 +24,9 @@ def worker(graph, destination, heuristic, speeds, in_queue, out_queue):
 def multiprocessing_astar(graph, origin, destination,
                            heuristic=euclidean_heuristic,
                            speeds=speeds, num_workers=4):
-    log_common(f"[Multiprocessing A*] Starting with {num_workers} workers.")
+    # log_common(f"[Multiprocessing A*] Starting with {num_workers} workers.")
     if origin not in graph or destination not in graph:
-        log_common("Origin or destination not in graph (multiprocessing).")
+        # log_common("Origin or destination not in graph (multiprocessing).")
         return None, None
     if origin == destination:
         return [origin], 0.0
