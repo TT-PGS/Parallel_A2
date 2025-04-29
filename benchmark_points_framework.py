@@ -16,7 +16,7 @@ MARKDOWN_FILE = "benchmark_points_summary.md"
 def load_points_list(env_file):
     pts = {}
     point_pairs = []
-    with open(env_file) as f:
+    with open(env_file, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#'):

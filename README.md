@@ -31,3 +31,10 @@ then run:
 python benchmark_framework.py
 
 link youtube for result: <https://www.youtube.com/playlist?list=PL5zvNdc-uZp_ej9yrAJEx_thENq-75o9q>
+
+If you've just want to get results for HCM city only,
+using:
+
+python benchmark_points_framework.py
+
+this benchmark gets list points in setup_points_list.env and run with A* versions.
