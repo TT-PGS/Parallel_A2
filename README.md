@@ -30,4 +30,4 @@ then run:
 
 python benchmark_framework.py
 
-link youtube for result: <https://youtu.be/gGJWwgtoswQ>
+link youtube for result: <https://www.youtube.com/playlist?list=PL5zvNdc-uZp_ej9yrAJEx_thENq-75o9q>
