@@ -1,122 +1,113 @@
-// astar_openmp.cpp
+#include <mpi.h>
 #include <iostream>
 #include <vector>
 #include <queue>
 #include <unordered_map>
 #include <cmath>
 #include <limits>
-#include <tuple>
-#include <chrono>
-#include <omp.h>
+#include <utility>
 
-// Simple Node structure
-struct Node
+struct Edge
 {
-    double x, y;
-    std::vector<std::pair<int, double>> neighbors; // (neighbor_id, length)
+    int to;
+    double cost;
 };
+typedef std::unordered_map<int, std::vector<Edge>> Graph;
+typedef std::unordered_map<int, std::pair<double, double>> Coords;
 
-std::unordered_map<int, Node> graph;
-
-// Dummy graph for demo
-void load_graph()
+double heuristic(int u, int v, Coords const &coords)
 {
-    // Graph: 0 --> 1 --> 2 --> 3 --> 4
-    graph[0] = {0.0, 0.0, {{1, 1.0}}};
-    graph[1] = {1.0, 0.0, {{2, 1.0}}};
-    graph[2] = {2.0, 0.0, {{3, 1.0}}};
-    graph[3] = {3.0, 0.0, {{4, 1.0}}};
-    graph[4] = {4.0, 0.0, {}};
+    double xu = coords.at(u).first;
+    double yu = coords.at(u).second;
+    double xv = coords.at(v).first;
+    double yv = coords.at(v).second;
+    return std::hypot(xu - xv, yu - yv);
 }
 
-double heuristic(int node1, int node2)
+double astar_dist(const Graph &graph, int start, int goal, Coords const &coords)
 {
-    Node a = graph[node1];
-    Node b = graph[node2];
-    return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
-}
-
-void astar_openmp(int start, int goal, int num_threads)
-{
-    std::priority_queue<std::tuple<double, double, int>,
-                        std::vector<std::tuple<double, double, int>>,
-                        std::greater<>>
-        open_set;
-    std::unordered_map<int, double> g_score;
-    g_score[start] = 0.0;
-
-    open_set.emplace(heuristic(start, goal), 0.0, start);
-
-    omp_set_num_threads(num_threads);
-
-    while (!open_set.empty())
+    struct Item
     {
-        int batch_size = std::min(num_threads, (int)open_set.size());
-        std::vector<std::tuple<double, double, int>> batch;
-
-        for (int i = 0; i < batch_size; ++i)
+        int id;
+        double f;
+        double g;
+        int parent;
+    };
+    struct Cmp
+    {
+        bool operator()(Item const &a, Item const &b) const
         {
-            auto [f, g, current] = open_set.top();
-            open_set.pop();
-            batch.emplace_back(f, g, current);
+            return a.f > b.f;
         }
+    };
 
-        bool goal_found = false;
-#pragma omp parallel for shared(goal_found)
-        for (int i = 0; i < batch.size(); ++i)
+    std::priority_queue<Item, std::vector<Item>, Cmp> open;
+    std::unordered_map<int, double> best_g;
+    best_g[start] = 0.0;
+    open.push(Item{start, heuristic(start, goal, coords), 0.0, -1});
+
+    while (!open.empty())
+    {
+        Item cur = open.top();
+        open.pop();
+        int u = cur.id;
+        double g = cur.g;
+        if (u == goal)
+            return g;
+        if (g > best_g[u])
+            continue;
+
+        std::vector<Edge> const &nbr = graph.at(u);
+        for (size_t i = 0; i < nbr.size(); ++i)
         {
-            auto [f, g, current] = batch[i];
-
-            if (current == goal)
+            int v = nbr[i].to;
+            double g2 = g + nbr[i].cost;
+            if (best_g.find(v) == best_g.end() || g2 < best_g[v])
             {
-#pragma omp critical
-                {
-                    goal_found = true;
-                }
-            }
-
-            for (auto [neighbor, length] : graph[current].neighbors)
-            {
-                double tentative_g = g + length;
-
-#pragma omp critical
-                {
-                    if (!g_score.count(neighbor) || tentative_g < g_score[neighbor])
-                    {
-                        g_score[neighbor] = tentative_g;
-                        double h = heuristic(neighbor, goal);
-                        open_set.emplace(tentative_g + h, tentative_g, neighbor);
-                    }
-                }
+                best_g[v] = g2;
+                double f2 = g2 + heuristic(v, goal, coords);
+                open.push(Item{v, f2, g2, u});
             }
         }
-
-        if (goal_found)
-        {
-            std::cout << "Reached goal!\n";
-            return;
-        }
     }
-
-    std::cout << "No path found\n";
+    return std::numeric_limits<double>::infinity();
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-    int num_threads = 4;
-    if (argc > 1)
+    MPI_Init(&argc, &argv);
+    int rank, nprocs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+    Graph graph;
+    Coords coords;
+    graph[0] = std::vector<Edge>{{1, 1.0}, {2, 2.0}};
+    graph[1] = std::vector<Edge>{{2, 1.0}};
+    coords[0] = std::make_pair(0.0, 0.0);
+    coords[1] = std::make_pair(1.0, 0.0);
+    coords[2] = std::make_pair(2.0, 0.0);
+
+    double dist = astar_dist(graph, 0, 2, coords);
+
+    std::vector<double> all_dists;
+    if (rank == 0)
+        all_dists.resize(nprocs);
+    double *recvbuf = (rank == 0 ? all_dists.data() : NULL);
+    MPI_Gather(&dist, 1, MPI_DOUBLE, recvbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (rank == 0)
     {
-        num_threads = std::stoi(argv[1]);
+        double best = std::numeric_limits<double>::infinity();
+        for (int i = 0; i < nprocs; ++i)
+        {
+            std::cout << "Rank " << i << " distance = " << all_dists[i] << "\n";
+            if (all_dists[i] < best)
+                best = all_dists[i];
+        }
+        std::cout << "Best distance = " << best << "\n";
     }
-    std::cout << "Running with " << num_threads << " threads (OpenMP)\n";
 
-    load_graph();
-    auto start_time = std::chrono::steady_clock::now();
-
-    astar_openmp(0, 4, num_threads);
-
-    auto end_time = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    std::cout << "Elapsed time: " << duration.count() << "ms\n";
+    MPI_Finalize();
     return 0;
 }

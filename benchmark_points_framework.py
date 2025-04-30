@@ -7,11 +7,12 @@ import pickle
 import matplotlib.pyplot as plt
 
 REPEAT = 2
-THREAD_COUNTS = [4]
-PROCESS_COUNTS = [3]
+THREAD_COUNTS = [1, 2, 4, 8]
+PROCESS_COUNTS = [1, 2, 4, 8]
 
 CSV_FILE = "benchmark_points_results.csv"
 MARKDOWN_FILE = "benchmark_points_summary.md"
+
 
 def load_points_list(env_file):
     pts = {}
@@ -31,6 +32,7 @@ def load_points_list(env_file):
                 point_pairs.append((start, end))
     return pts['place'], point_pairs
 
+
 def preload_graph(place):
     import osmnx as ox
     filename = f"graph_{place.replace(' ', '_').replace(',', '')}.pkl"
@@ -46,16 +48,19 @@ def preload_graph(place):
         print(f"✅ Saved graph to {filename}")
     return graph
 
+
 def nearest_node(graph, point):
     import osmnx as ox
     lat, lon = point
     return ox.nearest_nodes(graph, lon, lat)
+
 
 def run_command(command):
     start = time.time()
     subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     end = time.time()
     return end - start
+
 
 def benchmark_mode(description, command):
     print(f"\nBenchmarking {description}...")
@@ -68,6 +73,7 @@ def benchmark_mode(description, command):
     print(f"→ {description} Average Time: {avg_time:.2f} seconds\n")
     return avg_time
 
+
 def save_to_csv(all_results):
     with open(CSV_FILE, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -78,6 +84,7 @@ def save_to_csv(all_results):
                 for num, avg_time in data.items():
                     writer.writerow([start, end, mode, num if num else '-', avg_time])
     print(f"✅ Benchmark results saved to {CSV_FILE}")
+
 
 def plot_results(all_results):
     for points, results in all_results.items():
@@ -98,6 +105,7 @@ def plot_results(all_results):
         plt.close()
         print(f"✅ Plot saved for {start}->{end}")
 
+
 def generate_markdown(all_results):
     md_lines = []
     md_lines.append("# 📋 Benchmark Summary (Points)\n")
@@ -116,6 +124,7 @@ def generate_markdown(all_results):
         f.write(markdown_text)
 
     print("✅ Benchmark summary saved as 'benchmark_points_summary.md'")
+
 
 def main():
     print("="*40)
@@ -139,14 +148,17 @@ def main():
         results['Python Multi-thread'] = {n: benchmark_mode(f"Python Multi-thread ({n})", f"python main.py -n {n}") for n in THREAD_COUNTS}
         results['Python Multi-process'] = {m: benchmark_mode(f"Python Multi-process ({m})", f"python main.py -m {m}") for m in PROCESS_COUNTS}
 
-        results['C++ Sequential'] = {0: benchmark_mode("C++ Sequential", "./astar_sequential_cpp")}
-        results['C++ Multi-thread'] = {n: benchmark_mode(f"C++ Multi-thread ({n})", f"./astar_multithread_cpp {n}") for n in THREAD_COUNTS}
-        results['C++ OpenMP'] = {n: benchmark_mode(f"C++ OpenMP ({n})", f"./astar_openmp_cpp {n}") for n in THREAD_COUNTS}
+        # Updated commands for C++ binaries
+        results['C++ Sequential'] = {0: benchmark_mode("C++ Sequential", "./astar_sequential")}
+        results['C++ Multi-thread'] = {n: benchmark_mode(f"C++ Multi-thread ({n})", f"./astar_multithread {n}") for n in THREAD_COUNTS}
+        results['C++ MPI'] = {n: benchmark_mode(f"C++ MPI ({n})", f"mpiexec -n {n} ./astar_openmp") for n in PROCESS_COUNTS
+}
+
 
         all_results[(start_point, end_point)] = results
 
     save_to_csv(all_results)
-    plot_results(all_results)
+    # plot_results(all_results)
     generate_markdown(all_results)
 
     print("="*40)

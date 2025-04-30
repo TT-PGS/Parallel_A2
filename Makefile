@@ -1,18 +1,26 @@
-# Makefile for building A* C++ versions
+CXX        := g++
+CXXFLAGS   := -std=c++11 -O2
+LDFLAGS_MT := -pthread
 
-CXX = g++
-CXXFLAGS = -O2 -std=c++17
+# MPI include + library paths on Windows (Microsoft MPI)
+MPI_INCL := -I"C:\Program Files (x86)\Microsoft SDKs\MPI\Include"
+MPI_LIBS := -L"C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64" -lmsmpi
 
-all: astar_sequential_cpp astar_multithread_cpp astar_openmp_cpp
+TARGETS := astar_sequential astar_multithread astar_openmp
 
-astar_sequential_cpp: astar_sequential.cpp
-	$(CXX) $(CXXFLAGS) astar_sequential.cpp -o astar_sequential_cpp
+.PHONY: all clean
 
-astar_multithread_cpp: astar_multithread.cpp
-	$(CXX) $(CXXFLAGS) astar_multithread.cpp -o astar_multithread_cpp
+all: $(TARGETS)
 
-astar_openmp_cpp: astar_openmp.cpp
-	$(CXX) $(CXXFLAGS) -fopenmp astar_openmp.cpp -o astar_openmp_cpp
+astar_sequential: astar_sequential.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+astar_multithread: astar_multithread.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS_MT) -o $@ $<
+
+astar_openmp: astar_openmp.cpp
+	$(CXX) $(CXXFLAGS) $(MPI_INCL) $< -o $@ $(MPI_LIBS) 
+
 
 clean:
-	rm -f astar_sequential_cpp astar_multithread_cpp astar_openmp_cpp
+	rm -f $(TARGETS)

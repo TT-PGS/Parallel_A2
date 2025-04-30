@@ -1,83 +1,108 @@
-// astar_sequential.cpp
 #include <iostream>
 #include <vector>
 #include <queue>
 #include <unordered_map>
 #include <cmath>
 #include <limits>
-#include <tuple>
-#include <chrono>
+#include <utility>
+#include <algorithm>
 
-// Simple Node structure
-struct Node
+struct Edge
 {
-    double x, y;
-    std::vector<std::pair<int, double>> neighbors; // (neighbor_id, length)
+    int to;
+    double cost;
+};
+typedef std::unordered_map<int, std::vector<Edge>> Graph;
+typedef std::unordered_map<int, std::pair<double, double>> Coords;
+
+struct PQItem
+{
+    double f, g;
+    int id;
+    PQItem(double _f, double _g, int _id)
+        : f(_f), g(_g), id(_id) {}
 };
 
-std::unordered_map<int, Node> graph;
-
-// Dummy graph for demo
-void load_graph()
+struct ComparePQ
 {
-    // 0 --> 1 --> 2
-    graph[0] = {0.0, 0.0, {{1, 1.0}}};
-    graph[1] = {1.0, 0.0, {{2, 1.0}}};
-    graph[2] = {2.0, 0.0, {}};
+    bool operator()(PQItem const &a, PQItem const &b) const
+    {
+        return a.f > b.f;
+    }
+};
+
+double heuristic(int u, int v, Coords const &coords)
+{
+    double xu = coords.at(u).first;
+    double yu = coords.at(u).second;
+    double xv = coords.at(v).first;
+    double yv = coords.at(v).second;
+    return std::hypot(xu - xv, yu - yv);
 }
 
-double heuristic(int node1, int node2)
+std::vector<int> astar(Graph const &graph, int start, int goal, Coords const &coords)
 {
-    Node a = graph[node1];
-    Node b = graph[node2];
-    return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
-}
+    std::priority_queue<PQItem, std::vector<PQItem>, ComparePQ> open_set;
+    struct Node
+    {
+        double g;
+        int parent;
+    };
+    std::unordered_map<int, Node> closed;
 
-void astar(int start, int goal)
-{
-    std::priority_queue<std::tuple<double, double, int>,
-                        std::vector<std::tuple<double, double, int>>,
-                        std::greater<>>
-        open_set;
-    std::unordered_map<int, double> g_score;
-
-    g_score[start] = 0.0;
-    open_set.emplace(heuristic(start, goal), 0.0, start);
+    double h0 = heuristic(start, goal, coords);
+    open_set.push(PQItem(h0, 0.0, start));
+    closed[start] = Node{0.0, -1};
 
     while (!open_set.empty())
     {
-        auto [f, g, current] = open_set.top();
+        PQItem top = open_set.top();
         open_set.pop();
+        int u = top.id;
+        double g = top.g;
+        if (u == goal)
+            break;
+        if (g > closed[u].g)
+            continue;
 
-        if (current == goal)
+        std::vector<Edge> const &nbr = graph.at(u);
+        for (size_t i = 0; i < nbr.size(); ++i)
         {
-            std::cout << "Reached goal with cost " << g << "\\n";
-            return;
-        }
-
-        for (auto [neighbor, length] : graph[current].neighbors)
-        {
-            double tentative_g = g + length;
-            if (!g_score.count(neighbor) || tentative_g < g_score[neighbor])
+            int v = nbr[i].to;
+            double ng = g + nbr[i].cost;
+            if (closed.find(v) == closed.end() || ng < closed[v].g)
             {
-                g_score[neighbor] = tentative_g;
-                double h = heuristic(neighbor, goal);
-                open_set.emplace(tentative_g + h, tentative_g, neighbor);
+                double h = heuristic(v, goal, coords);
+                open_set.push(PQItem(ng + h, ng, v));
+                closed[v] = Node{ng, u};
             }
         }
     }
-    std::cout << "No path found\\n";
+
+    std::vector<int> path;
+    if (!closed.count(goal))
+        return path;
+    for (int cur = goal; cur != -1; cur = closed[cur].parent)
+        path.push_back(cur);
+    std::reverse(path.begin(), path.end());
+    return path;
 }
 
 int main()
 {
-    load_graph();
-    auto start_time = std::chrono::steady_clock::now();
+    Graph graph;
+    Coords coords;
 
-    astar(0, 2); // tìm đường từ node 0 đến node 2
+    graph[0] = std::vector<Edge>{{1, 1.0}, {2, 2.0}};
+    graph[1] = std::vector<Edge>{{2, 1.0}};
+    coords[0] = std::make_pair(0.0, 0.0);
+    coords[1] = std::make_pair(1.0, 0.0);
+    coords[2] = std::make_pair(2.0, 0.0);
 
-    auto end_time = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    std::cout << "Elapsed time: " << duration.count() << "ms\\n";
+    std::vector<int> path = astar(graph, 0, 2, coords);
+    std::cout << "Path:";
+    for (size_t i = 0; i < path.size(); ++i)
+        std::cout << " " << path[i];
+    std::cout << std::endl;
     return 0;
 }
