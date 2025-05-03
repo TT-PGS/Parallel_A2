@@ -1,40 +1,25 @@
-# Guide for running
-
-Create virtual environment on python, then install library to run.
-
-Then run:
-
-python main.py
-
-or
-
-python main.py [-n number_of_threads]
-
-or
-
-python main.py [-m number_of_processes]
-
--n and -m don't exist at the same time.
-
-if python main.py -n: default number of threads = 4
-
-if python main.py -m: default number -f processes = 3
-
-To run benmark for getting results automatically:
-
-build A start version C/C++, using:
-
-make
-
-then run:
-
-python benchmark_framework.py
+project_root/
+├── benchmark.py             # benchmark runner for all versions
+├── common/
+│   └── common.py            # load_map, load_point_pairs, setup_logger, setup directories
+├── part1/                   # Serial A*implementation
+│   ├── __init__.py
+│   └── algorithms.py        # astar_serial with dynamic h(x) and f-vector
+├── part2/                   # Concurrent A* variants
+│   ├── __init__.py
+│   ├── algorithms_finegrain.py  # A*with fine-grained locking
+│   └── algorithms_variant.py    # Alternative concurrent A* variant
+├── part3/                   # Merged parallel A*from part1 and part2
+│   ├── __init__.py
+│   └── algorithms_parallel.py    # Integrated parallel A* implementation
+└── setup/                   # storage for maps and point files
+    ├── maps/                # Pickle files of loaded maps (auto-created)
+    └── points/              # Files listing start/goal pairs by city
 
 link youtube for result: <https://www.youtube.com/playlist?list=PL5zvNdc-uZp_ej9yrAJEx_thENq-75o9q>
 
-If you've just want to get results for HCM city only,
-using:
+run:
 
-python benchmark_points_framework.py
+python benchmark.py
 
-this benchmark gets list points in setup_points_list.env and run with A* versions.
+the results will be stored in results folder (which is created after running    )

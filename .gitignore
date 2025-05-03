@@ -1,5 +1,7 @@
 usr_temp/*
 cache/*
+misc/*
+setup/maps/*
 
 *.pyc
 *.txt
