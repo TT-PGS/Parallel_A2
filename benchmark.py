@@ -1,48 +1,105 @@
-import time
-import csv
 import os
-from common.common import load_map, load_point_pairs, setup_logger
-from part1.algorithms import astar_serial
+import importlib
+import logging
+import osmnx as ox
+import time
+import networkx as nx
+import sys
 
-def dynamic_h(node, goal, map_data):
-    return ((node[0] - goal[0]) ** 2 + (node[1] - goal[1]) ** 2) ** 0.5
+# Fix import paths for part2 and part3 modules
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "part2")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "part3")))
 
-def extra1(node, goal, map_data, g_cost):
-    return g_cost / 2
+from part1 import algorithms as part1_algorithms
+from part3.algorithms import astar_solver as astar_parallel_solver
+from common.common import (
+    load_map,
+    load_point_pairs,
+    dynamic_heuristic as dynamic_h,
+    f_vector_basic,
+    save_results,
+    save_route_image
+)
 
-def extra2(node, goal, map_data, g_cost):
-    return abs(node[0] - goal[0]) + abs(node[1] - goal[1])  # Manhattan distance
+# --- Config ---
+CITY = "Ho Chi Minh City"
+POINT_FILE = "setup_points_list.env"
+OUTPUT_BASE_DIR = "results"
+THREAD_COUNTS = [1, 2, 4, 8, 12]
+VERSIONS = ["fine_grain", "optimistic"]
 
-def run_serial_benchmark(point_file, output_csv='benchmark_part1.csv', log_file=None):
-    logger = setup_logger(log_file)
-    pairs_by_city = load_point_pairs(point_file)
+# --- Logger setup ---
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
+
+# --- Helper: run a single astar version ---
+def run_astar_version(name, solver_func, graph, point_pairs, output_dir, image_dir, extra_args=None):
     results = []
+    os.makedirs(image_dir, exist_ok=True)
+    for (name1, coord1), (name2, coord2) in point_pairs:
+        try:
+            node1 = ox.nearest_nodes(graph, coord1[1], coord1[0])
+            node2 = ox.nearest_nodes(graph, coord2[1], coord2[0])
+            start_time = time.time()
+            if extra_args:
+                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic, **extra_args)
+            else:
+                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic)
+            elapsed = time.time() - start_time
 
-    for city, pairs in pairs_by_city.items():
-        map_data = load_map(city)
-        logger.info(f"Loaded map for {city} with {len(pairs)} point pairs")
+            if path is None:
+                distance = 0.0
+                length = 0
+            else:
+                distance = nx.path_weight(graph, path, weight='length')
+                length = len(path)
+                save_route_image(graph, path, name1, name2, image_dir)
 
-        for start, goal in pairs:
-            t0 = time.time()
-            path, f_vec = astar_serial(start, goal, map_data, dynamic_h, [extra1, extra2], logger)
-            elapsed = time.time() - t0
             results.append({
-                'city': city,
-                'start': start,
-                'goal': goal,
-                'path_len': len(path) if path else 0,
-                'f_vector': f_vec,
-                'time_s': elapsed
+                "algo": name,
+                "city": CITY,
+                "start": name1,
+                "goal": name2,
+                "distance_m": round(distance, 2),
+                "path_len": length,
+                "f_score": round(f_vec[0], 3) if f_vec else 0.0,
+                "extras": str(f_vec[1:]) if f_vec else "",
+                "time_s": round(elapsed, 5)
             })
+        except Exception as e:
+            logger.warning(f"{name} failed on {name1} → {name2}: {e}")
+    save_results(results, output_dir, f"benchmark_{name}")
+    logger.info(f"Saved result to {output_dir}\\benchmark_{name}.csv")
 
-    with open(output_csv, 'w', newline='') as csvfile:
-        fieldnames = ['city', 'start', 'goal', 'path_len', 'f_vector', 'time_s']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in results:
-            writer.writerow(row)
+# --- Main Execution ---
+if __name__ == "__main__":
+    logger.info(f"Loading map for city: {CITY}")
+    graph = load_map(CITY)
+    point_pairs_by_city = load_point_pairs(POINT_FILE)
+    if not isinstance(point_pairs_by_city, dict):
+        raise TypeError("Expected a dictionary from load_point_pairs()")
+    point_pairs = point_pairs_by_city.get(CITY, [])
 
-    logger.info(f"Benchmark complete. Results saved to {output_csv}")
+    # Part 1: Sequential A*
+    part1_dir = os.path.join(OUTPUT_BASE_DIR, "part1")
+    part1_img = os.path.join(part1_dir, "images")
+    logger.info("Running: part1.astar_sequential")
+    run_astar_version("part1", part1_algorithms.astar_solver, graph, point_pairs, part1_dir, part1_img)
 
-if __name__ == '__main__':
-    run_serial_benchmark('setup_points_list.env')
+    # Part 3: Parallel A* with Fine-grained and Optimistic locks
+    for version in VERSIONS:
+        for threads in THREAD_COUNTS:
+            algo_id = f"part3_{version}_{threads}t"
+            run_dir = os.path.join(OUTPUT_BASE_DIR, "part3", f"run_with_{threads}_threads")
+            img_dir = os.path.join(run_dir, "images")
+            logger.info(f"Running: {algo_id}")
+            run_astar_version(
+                algo_id,
+                astar_parallel_solver,
+                graph,
+                point_pairs,
+                run_dir,
+                img_dir,
+                {"version": version, "num_threads": threads}
+            )

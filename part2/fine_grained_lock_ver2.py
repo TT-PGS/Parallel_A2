@@ -6,7 +6,7 @@ class Node:
         self.next = None
         self.lock = threading.Lock()
 
-class FineGrainedList:
+class FineGrainedSet:
     def __init__(self):
         # hai sentinel: head đến -∞, tail đến +∞
         self.head = Node(float('-inf'))

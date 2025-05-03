@@ -6,7 +6,7 @@ class Node:
         self.next = None
         self.lock = threading.Lock()
 
-class OptimisticList:
+class OptimisticSet:
     def __init__(self):
         self.head = Node(float('-inf'))
         self.tail = Node(float('inf'))
@@ -64,6 +64,16 @@ class OptimisticList:
             prev.lock.release()
 
     def contains(self, val) -> bool:
-        prev, curr = self._find(val)
-        found = (curr.val == val)
-        return found
+        while True:
+            prev, curr = self._find(val)
+            prev.lock.acquire()
+            curr.lock.acquire()
+
+            if self._validate(prev, curr):
+                contains = (curr.val == val)
+                curr.lock.release()
+                prev.lock.release()
+                return contains
+
+            curr.lock.release()
+            prev.lock.release()
