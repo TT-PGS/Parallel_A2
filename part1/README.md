@@ -1,4 +1,4 @@
-project_root/
-├── part1/             # Serial A*implementation
-│   ├── __init__.py
-│   ├── algorithms.py  # astar_serial with dynamic h(x) and f-vector
+part1/                               # Serial A*implementation
+├── README.md
+├── __init__.py
+└── algorithms.py                    # astar_solver with dynamic h(x) and f-vector
