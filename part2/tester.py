@@ -9,7 +9,7 @@ from optimistic_synchronization_ver2 import OptimisticList as OptimisticSet
 from collections import Counter
 
 # Thiết lập đường dẫn log
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 RESULT_DIR = os.path.join(os.path.dirname(BASE_DIR), 'results', 'part2')
 os.makedirs(RESULT_DIR, exist_ok=True)
 LOG_FILE = os.path.join(RESULT_DIR, 'test_log.txt')
