@@ -10,6 +10,6 @@ project_root/
 │   └── tester.py                               # correctness & performance tester
 ```
 
-run this command to test correctness and performance for two concurrent structures:
+run this command to test correctness and performance for two concurrent structures (check results/part2/*log):
 
 python ./tester.py

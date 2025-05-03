@@ -38,6 +38,7 @@ def run_astar_version(name, solver_func, graph, point_pairs, output_dir, image_d
     results = []
     os.makedirs(image_dir, exist_ok=True)
     for (name1, coord1), (name2, coord2) in point_pairs:
+        logger.info(f"{name}: Running {name1} → {name2}")
         try:
             node1 = ox.nearest_nodes(graph, coord1[1], coord1[0])
             node2 = ox.nearest_nodes(graph, coord2[1], coord2[0])
