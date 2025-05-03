@@ -1,12 +1,15 @@
-part2
-├── README.md
-├── __init__.py
-├── fine_grained_lock.py                    # fine-grained locking structure
-├── optimistic_synchronization.py           # Optimistic structure
-├── fine_grained_lock_ver2.py               # Updated fine-grained locking structure
-├── optimistic_synchronization_ver2.py      # Updated Optimistic structure
-└── tester.py                               # A test of correctness and performance for two tructures
+```
+project_root/
+├── part2/                               # Concurrent structures (locking sets)
+│   ├── README.md
+│   ├── __init__.py
+│   ├── fine_grained_lock.py                    # fine-grained locking structure
+│   ├── optimistic_synchronization.py           # optimistic locking structure
+│   ├── fine_grained_lock_ver2.py               # updated fine-grained version
+│   ├── optimistic_synchronization_ver2.py      # updated optimistic version
+│   └── tester.py                               # correctness & performance tester
+```
 
-run this command to test correctness and performance: (results in test_log.txt)
+run this command to test correctness and performance for two concurrent structures:
 
-python tester.py
+python ./tester.py
