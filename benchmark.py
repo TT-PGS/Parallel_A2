@@ -44,9 +44,9 @@ def run_astar_version(name, solver_func, graph, point_pairs, output_dir, image_d
             node2 = ox.nearest_nodes(graph, coord2[1], coord2[0])
             start_time = time.time()
             if extra_args:
-                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic, **extra_args)
+                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic, logger=logger, **extra_args)
             else:
-                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic)
+                path, f_vec = solver_func(node1, node2, graph, dynamic_h, f_vector_basic, logger=logger)
             elapsed = time.time() - start_time
 
             if path is None:
