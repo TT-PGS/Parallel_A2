@@ -31,6 +31,7 @@ VERSIONS = ["fine_grain", "optimistic"]
 
 # --- Logger setup ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# logging.disable(logging.CRITICAL)
 logger = logging.getLogger()
 
 # --- Helper: run a single astar version ---

@@ -23,14 +23,15 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
     result = {"path": None, "f_vec": [float("inf"), float("inf"), float("inf")]}
     found = threading.Event()
 
-    MAX_VISITS = 100000  # Ngăn vô hạn vòng lặp nếu graph quá lớn hoặc unreachable
-    visit_counter = threading.local()
+    MAX_VISITS = 100000
+    visited = set()
+    visited_lock = threading.Lock()
 
     def worker():
-        visit_counter.count = 0
+        local_visits = 0
 
         while not found.is_set():
-            if visit_counter.count > MAX_VISITS:
+            if local_visits > MAX_VISITS:
                 if logger:
                     logger.warning(f"[Thread {threading.get_ident()}] Max visits reached ({MAX_VISITS}).")
                 return
@@ -42,19 +43,22 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
                     logger.info(f"[Thread {threading.get_ident()}] Open set empty.")
                 return
 
-            visit_counter.count += 1
+            local_visits += 1
 
-            logger.info(f"[Thread {threading.get_ident()}] Visiting: {current} with f={f_vec[0]}, g={f_vec[1]}, h={f_vec[2]}")
+            with visited_lock:
+                if current in visited:
+                    continue
+                visited.add(current)
 
-            if lock.contains(current):
-                continue
-            lock.add(current)
+            if logger:
+                logger.info(f"[Thread {threading.get_ident()}] Visiting: {current} with f={f_vec[0]}, g={f_vec[1]}, h={f_vec[2]}")
 
             if current == goal:
                 result["path"] = path
                 result["f_vec"] = f_vec
                 found.set()
-                logger.info(f"[Thread {threading.get_ident()}] Goal found!")
+                if logger:
+                    logger.info(f"[Thread {threading.get_ident()}] Goal found!")
                 return
 
             for neighbor in map_data.neighbors(current):
@@ -79,7 +83,6 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
 
                 open_set.put((f_value[0], f_value, new_g, neighbor, path + [neighbor]))
 
-    # Sau ThreadPoolExecutor:
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = [executor.submit(worker) for _ in range(num_threads)]
         for f in futures:
