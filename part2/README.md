@@ -6,3 +6,7 @@ part2
 ├── fine_grained_lock_ver2.py               # Updated fine-grained locking structure
 ├── optimistic_synchronization_ver2.py      # Updated Optimistic structure
 └── tester.py                               # A test of correctness and performance for two tructures
+
+run this command to test correctness and performance: (results in test_log.txt)
+
+python tester.py
