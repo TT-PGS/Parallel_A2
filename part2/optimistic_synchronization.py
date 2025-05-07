@@ -1,10 +1,10 @@
 import threading
 
 class Node:
-    def __init__(self, key):
-        self.key = key
+    def __init__(self, val):
+        self.val = val
         self.next = None
-        self.lock = threading.Lock()  # Per-node lock
+        self.lock = threading.Lock()
 
 class OptimisticSet:
     def __init__(self):
@@ -12,66 +12,68 @@ class OptimisticSet:
         self.tail = Node(float('inf'))
         self.head.next = self.tail
 
-    def _validate(self, pred, curr):
+    def _find(self, val):
+        prev, curr = self.head, self.head.next
+        while curr.val < val:
+            prev, curr = curr, curr.next
+        return prev, curr
+
+    def _validate(self, prev, curr):
         node = self.head
-        while node.key <= pred.key:
-            if node == pred:
-                return pred.next == curr
+        # đơn giản duyệt lại xem prev→next có phải curr không
+        while node.val <= prev.val:
+            if node is prev:
+                return prev.next is curr
             node = node.next
         return False
 
-    def add(self, key):
+    def add(self, val) -> bool:
         while True:
-            pred = self.head
-            curr = pred.next
-            while curr.key < key:
-                pred = curr
-                curr = curr.next
-            pred.lock.acquire()
+            prev, curr = self._find(val)
+            prev.lock.acquire()
             curr.lock.acquire()
-            try:
-                if self._validate(pred, curr):
-                    if curr.key == key:
-                        return False
-                    new_node = Node(key)
-                    new_node.next = curr
-                    pred.next = new_node
-                    return True
-            finally:
+            if self._validate(prev, curr):
+                if curr.val != val:
+                    node = Node(val)
+                    node.next = curr
+                    prev.next = node
+                    added = True
+                else:
+                    added = False
                 curr.lock.release()
-                pred.lock.release()
+                prev.lock.release()
+                return added
+            curr.lock.release()
+            prev.lock.release()
 
-    def remove(self, key):
+    def remove(self, val) -> bool:
         while True:
-            pred = self.head
-            curr = pred.next
-            while curr.key < key:
-                pred = curr
-                curr = curr.next
-            pred.lock.acquire()
+            prev, curr = self._find(val)
+            prev.lock.acquire()
             curr.lock.acquire()
-            try:
-                if self._validate(pred, curr):
-                    if curr.key != key:
-                        return False
-                    pred.next = curr.next
-                    return True
-            finally:
+            if self._validate(prev, curr):
+                if curr.val == val:
+                    prev.next = curr.next
+                    removed = True
+                else:
+                    removed = False
                 curr.lock.release()
-                pred.lock.release()
+                prev.lock.release()
+                return removed
+            curr.lock.release()
+            prev.lock.release()
 
-    def contains(self, key):
+    def contains(self, val) -> bool:
         while True:
-            pred = self.head
-            curr = pred.next
-            while curr.key < key:
-                pred = curr
-                curr = curr.next
-            pred.lock.acquire()
+            prev, curr = self._find(val)
+            prev.lock.acquire()
             curr.lock.acquire()
-            try:
-                if self._validate(pred, curr):
-                    return curr.key == key
-            finally:
+
+            if self._validate(prev, curr):
+                contains = (curr.val == val)
                 curr.lock.release()
-                pred.lock.release()
+                prev.lock.release()
+                return contains
+
+            curr.lock.release()
+            prev.lock.release()

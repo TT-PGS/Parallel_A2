@@ -4,8 +4,8 @@ import argparse
 import sys
 import random
 import os
-from fine_grained_lock_ver2 import FineGrainedList as FineGrainedSet
-from optimistic_synchronization_ver2 import OptimisticList as OptimisticSet
+from part2.fine_grained_lock import FineGrainedSet as FineGrainedSet
+from part2.optimistic_synchronization import OptimisticSet as OptimisticSet
 from collections import Counter
 
 # Thiết lập đường dẫn log
