@@ -10,9 +10,11 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
     f0 = f_vector_func(0, h0)
     if isinstance(f0, (float, int)):
         f0 = [f0, 0, h0]
+
     open_set = PriorityQueue()
     open_set.put((f0[0], f0, 0, start, [start]))
 
+    # Khởi tạo concurrent set thay cho visited
     if version == "fine_grain":
         lock = FineGrainedSet()
     elif version == "optimistic":
@@ -24,8 +26,6 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
     found = threading.Event()
 
     MAX_VISITS = 100000
-    visited = set()
-    visited_lock = threading.Lock()
 
     def worker():
         local_visits = 0
@@ -43,15 +43,13 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
                     logger.info(f"[Thread {threading.get_ident()}] Open set empty.")
                 return
 
+            # Dùng lock.add như kiểm tra & đánh dấu nguyên tử
+            if not lock.add(current):
+                continue
             local_visits += 1
 
-            with visited_lock:
-                if current in visited:
-                    continue
-                visited.add(current)
-
-            if logger:
-                logger.info(f"[Thread {threading.get_ident()}] Visiting: {current} with f={f_vec[0]}, g={f_vec[1]}, h={f_vec[2]}")
+            # if logger:
+            #     logger.info(f"[Thread {threading.get_ident()}] Visiting: {current} with f={f_vec[0]}, g={f_vec[1]}, h={f_vec[2]}")
 
             if current == goal:
                 result["path"] = path
@@ -62,6 +60,10 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
                 return
 
             for neighbor in map_data.neighbors(current):
+                if found.is_set():
+                    return
+
+                # Lấy độ dài cạnh
                 try:
                     edge_data = map_data[current][neighbor][0]
                     if isinstance(edge_data, tuple):
@@ -72,9 +74,6 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
                         logger.warning(f"Edge access error: {current} → {neighbor}: {e}")
                     cost = 1.0
 
-                if found.is_set():
-                    return
-
                 new_g = g + cost
                 new_h = h_func(neighbor, goal, map_data)
                 f_value = f_vector_func(new_g, new_h)
@@ -83,6 +82,7 @@ def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, vers
 
                 open_set.put((f_value[0], f_value, new_g, neighbor, path + [neighbor]))
 
+    # Chạy thread pool
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = [executor.submit(worker) for _ in range(num_threads)]
         for f in futures:
