@@ -175,7 +175,6 @@ class TestAStar(unittest.TestCase):
         g = SimpleGraph(edges)
         start, goal = (0, 0), (9, 9)
         path, fvec = astar_solver(start, goal, g, manhattan_h, fv)
-        # With the wall at x=5 and only a gap at (5,5), the Manhattan cost remains 18
         self.assertEqual(fvec[0], 22)
         self.assertEqual(len(path) - 1, 22)
         self.assertIn((5, 5), path)
