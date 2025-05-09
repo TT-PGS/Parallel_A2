@@ -14,14 +14,14 @@ class OptimisticSet:
 
     def _find(self, val):
         prev, curr = self.head, self.head.next
-        while curr.val < val:
+        while str(curr.val) < str(val):
             prev, curr = curr, curr.next
         return prev, curr
 
     def _validate(self, prev, curr):
         node = self.head
         # đơn giản duyệt lại xem prev→next có phải curr không
-        while node.val <= prev.val:
+        while str(node.val) <= str(prev.val):
             if node is prev:
                 return prev.next is curr
             node = node.next

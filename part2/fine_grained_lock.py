@@ -18,7 +18,7 @@ class FineGrainedSet:
         prev.lock.acquire()
         curr = prev.next
         curr.lock.acquire()
-        while curr.val < val:
+        while str(curr.val) < str(val):
             prev.lock.release()
             prev, curr = curr, curr.next
             curr.lock.acquire()

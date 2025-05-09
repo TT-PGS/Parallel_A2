@@ -1,94 +1,138 @@
 import threading
-from queue import PriorityQueue
-import queue
-from concurrent.futures import ThreadPoolExecutor
+import math
+import heapq
+import random
+import time
+from queue import PriorityQueue, Empty
+from collections import defaultdict
 from part2.fine_grained_lock import FineGrainedSet
 from part2.optimistic_synchronization import OptimisticSet
 
-def astar_solver(start, goal, map_data, h_func, f_vector_func, logger=None, version="fine_grain", num_threads=4):
-    h0 = h_func(start, goal, map_data)
-    f0 = f_vector_func(0, h0)
-    if isinstance(f0, (float, int)):
-        f0 = [f0, 0, h0]
+def get_edge_cost(graph, u, v):
+    try:
+        edge = graph[u][v][0]
+        if isinstance(edge, tuple):
+            edge = edge[2]
+        return edge.get('length', 1.0)
+    except Exception:
+        return 1.0
 
-    open_set = PriorityQueue()
-    open_set.put((f0[0], f0, 0, start, [start]))
+def euclidean_h(u, v, graph):
+    try:
+        x1, y1 = graph.nodes[u]['x'], graph.nodes[u]['y']
+        x2, y2 = graph.nodes[v]['x'], graph.nodes[v]['y']
+        return math.hypot(x2 - x1, y2 - y1)
+    except:
+        return 0.0
 
-    # Khởi tạo concurrent set thay cho visited
-    if version == "fine_grain":
-        lock = FineGrainedSet()
-    elif version == "optimistic":
-        lock = OptimisticSet()
-    else:
-        raise ValueError(f"Unsupported lock version: {version}")
+def is_within_ellipse(p, a, b, graph, factor=100):
+    try:
+        xa, ya = graph.nodes[a]['x'], graph.nodes[a]['y']
+        xb, yb = graph.nodes[b]['x'], graph.nodes[b]['y']
+        xp, yp = graph.nodes[p]['x'], graph.nodes[p]['y']
+        total = math.hypot(xa - xp, ya - yp) + math.hypot(xb - xp, yb - yp)
+        max_range = factor * math.hypot(xa - xb, ya - yb)
+        return total <= max_range
+    except:
+        return True
 
-    result = {"path": None, "f_vec": [float("inf"), float("inf"), float("inf")]}
-    found = threading.Event()
+def astar_parallel(start, goal, graph, h_func, f_vector_func=None, version="FineGrain", num_threads=4):
+    open_queues = [PriorityQueue() for _ in range(num_threads)]
+    visited = FineGrainedSet() if version == "FineGrain" else OptimisticSet()
+    g_score = defaultdict(lambda: float('inf'))
+    g_score[start] = 0.0
+    g_lock = threading.Lock()
+    best_goal_lock = threading.Lock()
+    result = {'path': None, 'f_vec': [float('inf'), float('inf')]}
 
-    MAX_VISITS = 100000
+    h0 = h_func(start, goal, graph)
+    open_queues[random.randint(0, num_threads - 1)].put(((h0, 0), start, 0.0, [start]))
 
-    def worker():
-        local_visits = 0
+    stop_event = threading.Event()
+    thread_done = [False] * num_threads
+    done_lock = threading.Lock()
+    empty_counter = [0] * num_threads
 
-        while not found.is_set():
-            if local_visits > MAX_VISITS:
-                if logger:
-                    logger.warning(f"[Thread {threading.get_ident()}] Max visits reached ({MAX_VISITS}).")
-                return
-
-            try:
-                _, f_vec, g, current, path = open_set.get_nowait()
-            except queue.Empty:
-                if logger:
-                    logger.info(f"[Thread {threading.get_ident()}] Open set empty.")
-                return
-
-            # Dùng lock.add như kiểm tra & đánh dấu nguyên tử
-            if not lock.add(current):
-                continue
-            local_visits += 1
-
-            # if logger:
-            #     logger.info(f"[Thread {threading.get_ident()}] Visiting: {current} with f={f_vec[0]}, g={f_vec[1]}, h={f_vec[2]}")
-
-            if current == goal:
-                result["path"] = path
-                result["f_vec"] = f_vec
-                found.set()
-                if logger:
-                    logger.info(f"[Thread {threading.get_ident()}] Goal found!")
-                return
-
-            for neighbor in map_data.neighbors(current):
-                if found.is_set():
-                    return
-
-                # Lấy độ dài cạnh
+    def worker(tid):
+        print(f"Thread {tid} started")
+        print(f"Thread {tid} is waiting for work")
+        print(f"Thread {tid} is working")
+        print(f"Thread {tid} is done")
+        while not stop_event.is_set():
+            success = False
+            for i in range(num_threads):
+                q = open_queues[(tid + i) % num_threads]
                 try:
-                    edge_data = map_data[current][neighbor][0]
-                    if isinstance(edge_data, tuple):
-                        edge_data = edge_data[2]
-                    cost = edge_data.get('length', 1.0)
-                except Exception as e:
-                    if logger:
-                        logger.warning(f"Edge access error: {current} → {neighbor}: {e}")
-                    cost = 1.0
+                    (f_val, hopper), node, g_val, path = q.get_nowait()
+                    success = True
+                    break
+                except Empty:
+                    continue
+            print(f"Thread {tid} is working")
 
-                new_g = g + cost
-                new_h = h_func(neighbor, goal, map_data)
-                f_value = f_vector_func(new_g, new_h)
-                if isinstance(f_value, (float, int)):
-                    f_value = [f_value, new_g, new_h]
+            if not success:
+                empty_counter[tid] += 1
+                if empty_counter[tid] > 100:
+                    with done_lock:
+                        thread_done[tid] = True
+                        if all(thread_done):
+                            stop_event.set()
+                    return
+                time.sleep(0.001)
+                continue
+            else:
+                empty_counter[tid] = 0
 
-                open_set.put((f_value[0], f_value, new_g, neighbor, path + [neighbor]))
+            with best_goal_lock:
+                if f_val > result['f_vec'][0]:
+                    continue
 
-    # Chạy thread pool
-    with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        futures = [executor.submit(worker) for _ in range(num_threads)]
-        for f in futures:
-            f.result()
+            if visited.contains(node):
+                continue
+            visited.add(node)
 
-    if not found.is_set() and logger:
-        logger.warning(f"A* did not find a path from {start} to {goal}")
+            if node == goal:
+                with best_goal_lock:
+                    if f_val < result['f_vec'][0]:
+                        result['path'] = path
+                        result['f_vec'] = [f_val, hopper]
+                stop_event.set()
+                return
 
-    return result["path"], result["f_vec"]
+            for nbr in graph.neighbors(node):
+                if not is_within_ellipse(nbr, start, goal, graph):
+                    continue
+                edge_cost = get_edge_cost(graph, node, nbr)
+                tentative_g = g_val + edge_cost
+                new_hop = hopper + 1
+
+                print(f"Thread {tid} is working on node {node} with tentative g {tentative_g} and new hop {new_hop}")
+                with g_lock:
+                    if tentative_g > g_score[nbr]:
+                        continue
+                    if tentative_g == g_score[nbr] and new_hop >= result['f_vec'][1]:
+                        continue
+                    g_score[nbr] = tentative_g
+
+                h_nbr = h_func(nbr, goal, graph)
+                new_f = tentative_g + h_nbr
+                open_queues[random.randint(0, num_threads - 1)].put(((new_f, new_hop), nbr, tentative_g, path + [nbr]))
+
+    threads = [threading.Thread(target=worker, args=(i,), daemon=True) for i in range(num_threads)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    if result['path']:
+        if f_vector_func:
+            g = g_score[goal]
+            h = h_func(goal, goal, graph)
+            fvec = f_vector_func(g, h)
+            if isinstance(fvec, tuple):
+                fvec = list(fvec)
+            elif isinstance(fvec, (float, int)):
+                fvec = [fvec]
+            return result['path'], fvec
+        return result['path'], result['f_vec']
+    return None, None
