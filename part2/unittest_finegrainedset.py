@@ -3,11 +3,15 @@ import threading
 from part2.fine_grained_lock import FineGrainedSet  # adjust to your module path
 
 class TestFineGrainedSet(unittest.TestCase):
+    """Unit tests for FineGrainedSet (a concurrent linked list set using fine-grained locking)."""
+
     def setUp(self):
+        """Initialize a new FineGrainedSet before each test."""
         self.set = FineGrainedSet()
 
-    # Single‐threaded tests
+    # --- Single-threaded tests ---
     def test_add_and_contains(self):
+        """Test that adding a value and checking its existence behaves correctly."""
         self.assertFalse(self.set.contains(10))
         self.assertTrue(self.set.add(10))
         self.assertTrue(self.set.contains(10))
@@ -15,6 +19,7 @@ class TestFineGrainedSet(unittest.TestCase):
         self.assertFalse(self.set.add(10))
 
     def test_remove(self):
+        """Test that removing values behaves correctly, including removing nonexistent ones."""
         self.set.add(5)
         self.assertTrue(self.set.contains(5))
         self.assertTrue(self.set.remove(5))
@@ -23,6 +28,7 @@ class TestFineGrainedSet(unittest.TestCase):
         self.assertFalse(self.set.remove(5))
 
     def test_add_remove_sequence(self):
+        """Add a sequence of values, verify their presence, then remove and verify absence."""
         vals = [1, 2, 3, 4, 5]
         for v in vals:
             self.assertTrue(self.set.add(v))
@@ -33,11 +39,11 @@ class TestFineGrainedSet(unittest.TestCase):
         for v in vals:
             self.assertFalse(self.set.contains(v))
 
-    # Multi‐threaded tests
+    # --- Multi-threaded tests ---
     def test_concurrent_add_unique(self):
         """
         Spawn N threads each adding a unique value.
-        At the end, all values should be present.
+        At the end, all values should be present in the set.
         """
         N = 50
         threads = []
@@ -54,7 +60,7 @@ class TestFineGrainedSet(unittest.TestCase):
     def test_concurrent_add_same_value(self):
         """
         Spawn N threads all trying to add the same value.
-        Only one add should return True; the rest must return False.
+        Only one thread should succeed; others should fail due to duplication.
         """
         N = 20
         results = []
@@ -76,10 +82,9 @@ class TestFineGrainedSet(unittest.TestCase):
 
     def test_concurrent_add_remove_mixed(self):
         """
-        Spawn threads that add even numbers and remove odd numbers concurrently.
-        Starting from a set containing 0–99, after operations:
-            • Evens remain
-            • Odds are removed
+        Test mixed workload: spawn threads that add even numbers and remove odd numbers.
+        Starting from a set preloaded with 0–99.
+        Expected: all even numbers remain, all odd numbers removed.
         """
         # preload 0..99
         for i in range(100):

@@ -46,14 +46,14 @@ class TestAStar(unittest.TestCase):
     def test_0001(self):
         """Straight line A→B→C, cost=2"""
         g = SimpleGraph({'A':[('B',1)], 'B':[('C',1)], 'C':[]})
-        path, fvec = astar_parallel('A','C', g, exact_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','C', g, exact_h, None, "Optimistic", 4)
         self.assertEqual(path, ['A','B','C'])
         self.assertEqual(fvec[0], 2)
 
     def test_0002(self):
         """Zero‐cost edge A→B (0), B→C (1)"""
         g = SimpleGraph({'A':[('B',0)], 'B':[('C',1)], 'C':[]})
-        path, fvec = astar_parallel('A','C', g, zero_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','C', g, zero_h, None, "Optimistic", 4)
         self.assertEqual(path, ['A','B','C'])
         self.assertEqual(fvec[0], 1)
 
@@ -65,7 +65,7 @@ class TestAStar(unittest.TestCase):
             'C':[('D',1)],
             'D':[]
         })
-        path, fvec = astar_parallel('A','D', g, zero_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','D', g, zero_h, None, "Optimistic", 4)
         self.assertIn(path, [['A','B','D'], ['A','C','D']])
         self.assertEqual(fvec[0], 2)
 
@@ -78,14 +78,14 @@ class TestAStar(unittest.TestCase):
             'C':[('D',1)],
             'D':[]
         })
-        path, fvec = astar_parallel('A','D', g, zero_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','D', g, zero_h, None, "Optimistic", 4)
         self.assertEqual(len(path), 3)
         self.assertEqual(fvec[0], 2)
 
     def test_0005(self):
         """No path available => (None,None)"""
         g = SimpleGraph({'A':[('B',1)], 'B':[], 'G':[]})
-        path, fvec = astar_parallel('A','G', g, zero_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','G', g, zero_h, None, "Optimistic", 4)
         self.assertIsNone(path)
         self.assertIsNone(fvec)
 
@@ -105,7 +105,9 @@ class TestAStar(unittest.TestCase):
                         nbrs.append((v,1))
                 edges[u] = nbrs
         g = SimpleGraph(edges)
-        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "fine", 4)
+        print("Graph edges:", g._adj)
+        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "Optimistic", 4)
+        print("Path:", path)
         self.assertEqual(path, [(0,0),(1,0),(2,0),(2,1),(2,2)])
         self.assertEqual(fvec[0], 4)
         # ensure a valid path around the obstacle
@@ -120,7 +122,7 @@ class TestAStar(unittest.TestCase):
             'C':[('A',1),('D',1)],
             'D':[]
         })
-        path, fvec = astar_parallel('A','D', g, zero_h, None, "fine", 4)
+        path, fvec = astar_parallel('A','D', g, zero_h, None, "Optimistic", 4)
         self.assertEqual(path, ['A','B','C','D'])
         self.assertEqual(fvec[0], 3)
 
@@ -150,7 +152,7 @@ class TestAStar(unittest.TestCase):
                 edges[u] = nbrs
         g = SimpleGraph(edges)
         start, goal = (0,0), (3,3)
-        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "fine", 4)
+        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "Optimistic", 4)
         # must detour through the single gap at (1,2):
         # [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (2, 3), (3, 3)], cost = 6
         self.assertEqual(fvec[0], 6)
@@ -174,7 +176,7 @@ class TestAStar(unittest.TestCase):
 
         g = SimpleGraph(edges)
         start, goal = (0, 0), (9, 9)
-        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "fine", 4)
+        path, fvec = astar_parallel(start, goal, g, manhattan_h, None, "Optimistic", 4)
         self.assertEqual(fvec[0], 22)
         self.assertEqual(len(path) - 1, 22)
         self.assertIn((5, 5), path)

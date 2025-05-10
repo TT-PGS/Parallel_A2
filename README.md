@@ -1,29 +1,44 @@
 ```
-project_root/
-├── benchmark.py                         # benchmark runner for all versions
-├── common/
-│   └── common.py                        # load_map, load_point_pairs, setup_logger, setup directories
-├── part1/                               # Serial A* implementation
+.
+├── common
+│   ├── common.py
+│   ├── __init__.py
+│   └── __pycache__
+│       └── __init__.cpython-312.pyc
+├── part1
+│   ├── algorithms.py
+│   ├── benchmark.py
+│   ├── __init__.py
 │   ├── README.md
+│   ├── unittest.py
+│   └── unittest_under_circumstances.py
+├── part2
+│   ├── fine_grained_lock.py
 │   ├── __init__.py
-│   └── algorithms.py                    # astar_solver with dynamic h(x) and f-vector
-├── part2/                               # Concurrent structures (locking sets)
+│   ├── optimistic_synchronization.py
 │   ├── README.md
+│   ├── unittest_finegrainedset.py
+│   ├── unittest_for_optimictis.py
+│   └── unittest_for_performance.py
+├── part3
+│   ├── algorithms.py
+│   ├── benchmark.py
 │   ├── __init__.py
-│   ├── fine_grained_lock.py                    # fine-grained locking structure
-│   ├── optimistic_synchronization.py           # optimistic locking structure
-│   ├── fine_grained_lock_ver2.py               # updated fine-grained version
-│   ├── optimistic_synchronization_ver2.py      # updated optimistic version
-│   └── tester.py                               # correctness & performance tester
-├── part3/                               # Merged parallel A* from part1 and part2
-│   ├── __init__.py
-│   └── algorithms_parallel.py           # integrated parallel A* implementation
-├── results/                             # Output folder (auto-created)
-│   └── part2/
-│       └── test_log.txt                 # test results from tester.py
-└── setup/                               # storage for maps and point files
-    ├── maps/                            # pickle files of loaded maps (auto-created)
-    └── points/                          # files listing start/goal pairs by city
+│   ├── README.md
+│   ├── unittest_for_fine_grain.py
+│   ├── unittest_for_optimictis.py
+│   ├── unittest_under_circumstances_for_fine_grain.py
+│   └── unittest_under_circumstances_for_optimictis.py
+├── README.md
+└── setup
+    ├── maps
+    └── points
+        ├── setup_Hanoi.env
+        ├── setup_Ho_Chi_Minh.env
+        ├── setup_Los_Angeles.env
+        ├── setup_New_York.env
+        ├── setup_points.env
+        └── setup_points_list.env
 ```
 
 Link YouTube for result: <https://www.youtube.com/playlist?list=PL5zvNdc-uZp_ej9yrAJEx_thENq-75o9q>

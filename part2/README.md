@@ -5,11 +5,12 @@ project_root/
 │   ├── __init__.py
 │   ├── fine_grained_lock.py                    # fine-grained locking structure
 │   ├── optimistic_synchronization.py           # optimistic locking structure
-│   ├── fine_grained_lock_ver2.py               # updated fine-grained version
-│   ├── optimistic_synchronization_ver2.py      # updated optimistic version
-│   └── tester.py                               # correctness & performance tester
+│   ├── unittest_finegrainedset.py              # unittest for fine-grained version
+│   ├── unittest_for_optimictis.py              # unittest for optimistic version
+│   └── unittest_for_performance.py             # performance tester
 ```
 
-run this command to test correctness and performance for two concurrent structures (check results/part2/*log):
-
-python ./tester.py
+commands:
+python -m unittest -v .\part2\unittest_finegrainedset.py        # to run unittest with fine-grain structure
+python -m unittest -v .\part2\unittest_for_optimictis.py        # to run unittest which optimictis structure
+python -m unittest -v .\part2\unittest_for_performance.py       # to run performance test for fine-grain and optimictis structures

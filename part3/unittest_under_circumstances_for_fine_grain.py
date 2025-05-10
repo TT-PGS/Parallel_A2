@@ -1,6 +1,5 @@
 import unittest
 from part3.algorithms import astar_parallel as astar_solver
-import random
 
 class SimpleGraph:
     """
@@ -43,7 +42,7 @@ class TestHopPreference(unittest.TestCase):
             'F': [('D',1)],
             'D': []
         })
-        path, fvec = astar_solver('A', 'D', g, zero_h)
+        path, fvec = astar_solver('A', 'D', g, zero_h, None, "FineGrain", 4)
         self.assertEqual(path, ['A', 'B', 'C', 'D'])
         self.assertEqual(fvec[0], 3)
 
@@ -59,7 +58,7 @@ class TestHopPreference(unittest.TestCase):
             'C': [('D',1)],
             'D': []
         })
-        path, fvec = astar_solver('A', 'D', g, zero_h)
+        path, fvec = astar_solver('A', 'D', g, zero_h, None, "FineGrain", 4)
         self.assertEqual(path, ['A', 'X', 'D'])
         self.assertEqual(fvec[0], 3)
 
@@ -77,7 +76,7 @@ class TestHopPreference(unittest.TestCase):
             'R': [('D',1)],
             'D': []
         })
-        path, fvec = astar_solver('A', 'D', g, zero_h)
+        path, fvec = astar_solver('A', 'D', g, zero_h, None, "FineGrain", 4)
         self.assertEqual(path, ['A', 'B', 'C', 'D'])
         self.assertEqual(fvec[0], 3)
 
