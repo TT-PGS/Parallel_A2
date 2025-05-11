@@ -152,7 +152,7 @@ def astar_parallel(start, goal, graph, h_func, f_vector_func=None, version="Fine
         if f_vector_func:
             g = g_score[goal]
             h = h_func(goal, goal, graph)
-            fvec = f_vector_func(g, h)
+            fvec = f_vector_func(g, h, result['f_vec'][1])
             if isinstance(fvec, tuple):
                 fvec = list(fvec)
             elif isinstance(fvec, (float, int)):

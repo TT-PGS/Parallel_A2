@@ -4,6 +4,8 @@ import math
 import logging
 import osmnx as ox
 import networkx as nx
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from part1.algorithms import astar_solver  # sửa thành đúng module
 from common.common import (

@@ -22,8 +22,13 @@ def dynamic_heuristic(node, goal, graph, t=0.0):
     speed = speeds[int(t) % len(speeds)]
     return distance / speed
 
-def f_vector_basic(g_score, h_score):
-    return (g_score + h_score, g_score, h_score)
+def f_vector_basic(g_score, h_score, hopper_count, t=0.0):
+    """Basic f-vector function."""
+    f_score = g_score + h_score
+    WEIGHT_COST = 0.6
+    WEIGHT_HOP = 0.4
+    f_weight = WEIGHT_COST * f_score + WEIGHT_HOP * hopper_count
+    return (f_weight, hopper_count, t)
 
 # --------------------------- I/O Handling ---------------------------
 def ensure_setup_dirs():
