@@ -5,3 +5,4 @@ setup/maps/*
 
 *.pyc
 *.txt
+!requirements.txt
