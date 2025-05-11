@@ -16,4 +16,4 @@ python -m unittest -v .\part1\unittest.py                           # to run uni
 
 python -m unittest -v .\part1\unittest_under_circumstances.py       # to run unittest under circumstances
 
-python -m unittest -v .\part1\benchmark.py                          # to run benchmark and get results with real maps
+python -m part1.benchmark                                           # to run benchmark and get results with real maps
