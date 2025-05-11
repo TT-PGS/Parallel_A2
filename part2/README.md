@@ -11,6 +11,9 @@ project_root/
 ```
 
 commands:
+
 python -m unittest -v .\part2\unittest_finegrainedset.py        # to run unittest with fine-grain structure
+
 python -m unittest -v .\part2\unittest_for_optimictis.py        # to run unittest which optimictis structure
+
 python -m unittest -v .\part2\unittest_for_performance.py       # to run performance test for fine-grain and optimictis structures

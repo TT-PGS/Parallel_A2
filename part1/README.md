@@ -11,6 +11,9 @@ project_root/
 ```
 
 commands:
+
 python -m unittest -v .\part1\unittest.py                           # to run unittest
+
 python -m unittest -v .\part1\unittest_under_circumstances.py       # to run unittest under circumstances
+
 python -m unittest -v .\part1\benchmark.py                          # to run benchmark and get results with real maps
